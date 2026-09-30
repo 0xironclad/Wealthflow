@@ -11,6 +11,9 @@ export async function refreshSavingStatuses(db: Pool, userId: string) {
         [userId]
     );
 
+    const changedIds: number[] = [];
+    const changedStatuses: string[] = [];
+
     for (const saving of rows) {
         const newStatus = determineStatus(
             saving.amount,
@@ -20,10 +23,21 @@ export async function refreshSavingStatuses(db: Pool, userId: string) {
         );
 
         if (newStatus !== saving.status) {
-            await db.query(
-                "UPDATE savings SET status = $1 WHERE id = $2 AND userid = $3",
-                [newStatus, saving.id, userId]
-            );
+            changedIds.push(saving.id);
+            changedStatuses.push(newStatus);
         }
     }
+
+    if (changedIds.length === 0) {
+        return;
+    }
+
+    // One UPDATE for every row that changed instead of one per row.
+    await db.query(
+        `UPDATE savings AS s
+         SET status = c.status
+         FROM unnest($1::int[], $2::text[]) AS c(id, status)
+         WHERE s.id = c.id AND s.userid = $3`,
+        [changedIds, changedStatuses, userId]
+    );
 }
