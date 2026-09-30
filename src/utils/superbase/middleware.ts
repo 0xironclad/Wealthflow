@@ -1,10 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_USER_ID_HEADER } from "@/lib/auth/session-header";
 
 export async function updateSession(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    });
+    // Strip any client-supplied copy of the trusted header first, for every
+    // matched request (including when there's no signed-in user below), so
+    // it can never be spoofed. The matcher in middleware.ts covers every
+    // page and API route, so this always runs before getSessionUserId()'s
+    // header fallback would otherwise need to hit Supabase Auth itself.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete(SESSION_USER_ID_HEADER);
+
+    // Cookies Supabase wants refreshed; applied to the final response below
+    // so we only ever build one NextResponse (with the final request
+    // headers already in place) instead of racing two reconstructions.
+    const cookiesToApply: Array<{
+        name: string;
+        value: string;
+        options?: Record<string, unknown>;
+    }> = [];
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,12 +32,7 @@ export async function updateSession(request: NextRequest) {
                     cookiesToSet.forEach(({ name, value }) =>
                         request.cookies.set(name, value)
                     );
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    });
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    );
+                    cookiesToApply.push(...cookiesToSet);
                 },
             },
         }
@@ -49,6 +58,22 @@ export async function updateSession(request: NextRequest) {
         url.pathname = "/login";
         return NextResponse.redirect(url);
     }
+
+    if (user) {
+        // Already verified above; forward it so handlers/actions can skip
+        // their own getUser() call (see src/lib/auth/session.ts).
+        requestHeaders.set(SESSION_USER_ID_HEADER, user.id);
+    }
+
+    const supabaseResponse = NextResponse.next({
+        request: {
+            headers: requestHeaders,
+        },
+    });
+
+    cookiesToApply.forEach(({ name, value, options }) =>
+        supabaseResponse.cookies.set(name, value, options)
+    );
 
     return supabaseResponse;
 }
