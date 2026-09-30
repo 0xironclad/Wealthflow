@@ -30,7 +30,11 @@ export const useExpenses = (userId: string) => {
                     category: expense.category,
                 })
             ),
-        staleTime: 1000 * 30,
+        // Matches the staleTime other 'expenses' observers use (dashboard-top-row,
+        // transaction page) so they don't fight over refetch behavior on the
+        // same query key.
+        staleTime: 1000 * 60 * 60,
+        refetchOnWindowFocus: false,
     });
 };
 

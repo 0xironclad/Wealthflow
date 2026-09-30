@@ -131,6 +131,10 @@ export default function InsightsPage() {
         queryKey: ['savings', user?.id],
         queryFn: () => getSavings(user?.id ?? ''),
         enabled: !!user?.id && !isLoadingUser,
+        // Match the staleTime other 'savings' observers use (savings-accounts,
+        // useSavings) so this doesn't trigger its own refetch on mount.
+        staleTime: 1000 * 60 * 60,
+        refetchOnWindowFocus: false,
         select: (data) => data.map((saving: {
             id: number;
             userid: number;
@@ -158,6 +162,9 @@ export default function InsightsPage() {
         queryKey: ['budgets', user?.id],
         queryFn: () => user ? getBudgetsById(user.id) : Promise.resolve({ success: true, data: [] }),
         enabled: !!user,
+        // Matches dashboard-top-row's observer of this key.
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
         select: (data) => {
             if (!data.success || !data.data) return [];
             return data.data.map((budget: {
@@ -194,6 +201,8 @@ export default function InsightsPage() {
         queryKey: ['financialHealth', user?.id],
         queryFn: () => user ? getFinancialHealth() : Promise.resolve({ score: 0, savingsRate: 0, runwayMonths: 0, grade: 'N/A' }),
         enabled: !!user,
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
     });
 
     // *SAVINGS COMPUTATIONS

@@ -37,6 +37,9 @@ export function SavingsCommandMenu() {
     queryKey: ['savings', user?.id],
     queryFn: () => getSavings(user?.id ?? ''),
     enabled: !!user?.id,
+    // Matches the other observers of this key (dashboard, savings accounts grid).
+    staleTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
     select: (data) => data.map((saving: {
       id: number;
       userid: number;

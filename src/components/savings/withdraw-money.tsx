@@ -42,6 +42,9 @@ export default function WithdrawMoneyModal({ savingId, onClose }: WithdrawMoneyP
     queryKey: ["savings", user?.id],
     enabled: !!user?.id,
     queryFn: () => getSavings(user?.id ?? ""),
+    // Matches the other observers of this key (dashboard, savings accounts grid).
+    staleTime: 1000 * 60 * 60,
+    refetchOnWindowFocus: false,
   });
   const currentSaving = savings?.find((s: Saving) => s.id === savingId);
   const availableBalance = currentSaving?.amount || 0;
