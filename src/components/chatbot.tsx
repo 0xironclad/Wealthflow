@@ -5,7 +5,7 @@ import { Send, Bot, User, X, MessageSquare } from 'lucide-react';
 import { useUser } from "@/context/UserContext";
 import { useQuery } from "@tanstack/react-query";
 import { getFinancialHealth, getMonthlyCashFlow, getSpendingByCategory, getCategoryTrends } from "@/server/analytics";
-import { getUserData } from "@/server/user";
+import { getUserData } from "@/server/user-queries";
 
 interface Message {
     role: "user" | "assistant";
@@ -23,70 +23,74 @@ function FloatingChatbot() {
     const { user } = useUser();
     const userId = user?.id;
 
+    // Only fetch the chat's context once it's actually open -- these used to
+    // fire on every page load, for every page, even when the chat was closed.
+    const contextEnabled = isOpen && !!userId;
+
     const { data: savingsData } = useQuery({
         queryKey: ['savings', userId],
-        queryFn: () => fetch(`/api/savings?userId=${userId}`).then(res => res.json()),
-        enabled: !!userId
+        queryFn: () => fetch(`/api/savings`).then(res => res.json()),
+        enabled: contextEnabled
     });
 
     const { data: transactionsData } = useQuery({
         queryKey: ['expenses', userId],
-        queryFn: () => fetch(`/api/expenses?userId=${userId}`).then(res => res.json()),
-        enabled: !!userId
+        queryFn: () => fetch(`/api/expense`).then(res => res.json()),
+        enabled: contextEnabled
     });
 
     const { data: savingHistoryData } = useQuery({
         queryKey: ['savingsHistory', userId],
-        queryFn: () => fetch(`/api/savings/history?userId=${userId}`).then(res => res.json()),
-        enabled: !!userId
+        queryFn: () => fetch(`/api/savings/history`).then(res => res.json()),
+        enabled: contextEnabled
     });
 
     const { data: incomeData } = useQuery({
         queryKey: ['income', userId],
-        queryFn: () => fetch(`/api/income?userId=${userId}`).then(res => res.json()),
-        enabled: !!userId
+        queryFn: () => fetch(`/api/income`).then(res => res.json()),
+        enabled: contextEnabled
     });
 
     const { data: budgetData } = useQuery({
         queryKey: ['budget', userId],
-        queryFn: () => fetch(`/api/budget?userId=${userId}`).then(res => res.json()),
-        enabled: !!userId
+        queryFn: () => fetch(`/api/budget`).then(res => res.json()),
+        enabled: contextEnabled
     });
 
     const { data: balanceData } = useQuery({
         queryKey: ['balance', userId],
-        queryFn: () => fetch(`/api/balance?userId=${userId}`).then(res => res.json()),
-        enabled: !!userId
+        queryFn: () => fetch(`/api/balance`).then(res => res.json()),
+        enabled: contextEnabled
     });
 
     const { data: userProfileData } = useQuery({
         queryKey: ['userProfile', userId],
-        queryFn: () => userId ? getUserData() : Promise.resolve(null),
-        enabled: !!userId
+        queryFn: () => getUserData(),
+        enabled: contextEnabled
     });
 
     const { data: financialHealthData } = useQuery({
         queryKey: ['financialHealth', userId],
-        queryFn: () => userId ? getFinancialHealth() : Promise.resolve(null),
-        enabled: !!userId
+        queryFn: () => getFinancialHealth(),
+        enabled: contextEnabled
     });
 
     const { data: monthlyCashFlowData } = useQuery({
         queryKey: ['monthlyCashFlow', userId],
-        queryFn: () => userId ? getMonthlyCashFlow() : Promise.resolve([]),
-        enabled: !!userId
+        queryFn: () => getMonthlyCashFlow(),
+        enabled: contextEnabled
     });
 
     const { data: spendingByCategoryData } = useQuery({
         queryKey: ['spendingByCategory', userId],
-        queryFn: () => userId ? getSpendingByCategory() : Promise.resolve([]),
-        enabled: !!userId
+        queryFn: () => getSpendingByCategory(),
+        enabled: contextEnabled
     });
 
     const { data: categoryTrendsData } = useQuery({
         queryKey: ['categoryTrends', userId],
-        queryFn: () => userId ? getCategoryTrends() : Promise.resolve({ data: [], categories: [] }),
-        enabled: !!userId
+        queryFn: () => getCategoryTrends(),
+        enabled: contextEnabled
     });
 
     const scrollToBottom = () => {
