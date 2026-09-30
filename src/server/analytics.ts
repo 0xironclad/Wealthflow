@@ -1,6 +1,4 @@
-// Read-only analytics helpers, fetched from the client. See
-// src/server/income-queries.ts for why: server actions are invoked one at a
-// time by Next.js, which was serializing these alongside other reads.
+// Reads go through GET routes so they run in parallel; Next.js runs server actions one at a time.
 
 type CategoryTrends = {
     data: { month: string; [category: string]: number | string }[];

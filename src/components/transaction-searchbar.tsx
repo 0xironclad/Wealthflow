@@ -37,8 +37,7 @@ function TransactionsTableSearchBar() {
     queryKey: ["expenses", user?.id],
     queryFn: () => (user ? getExpensesById(user.id) : null),
     enabled: !!user,
-    // Matches the transaction page's query on the same key so this doesn't
-    // trigger its own refetch on mount.
+    // Same staleTime as the transaction page's query on this key.
     staleTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     select: (data) =>

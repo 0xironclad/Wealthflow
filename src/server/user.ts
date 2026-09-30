@@ -4,10 +4,7 @@ import pool from "@/database/db";
 import { withoutPassword } from "@/lib/auth/public-user";
 import { getSessionUserId } from "@/lib/auth/session";
 
-// Reads live at GET /api/user (see src/server/user-queries.ts) so the
-// browser can fetch them in parallel with other dashboard requests; server
-// actions are invoked one at a time by Next.js. This file keeps only the
-// mutation.
+// Reads live at GET /api/user (see user-queries.ts); only the mutation stays a server action.
 
 export async function updateUserProfile(
     data: {

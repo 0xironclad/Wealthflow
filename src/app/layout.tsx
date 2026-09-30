@@ -33,9 +33,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Resolve the user once, server-side, and hand it to UserProvider so the
-  // client doesn't need its own getUser() round trip. Null on /login and
-  // /auth, which is expected there.
+  // Resolved once on the server, so the client needs no getUser() round trip.
   const supabase = await createClient();
   const {
     data: { user },

@@ -23,8 +23,7 @@ function FloatingChatbot() {
     const { user } = useUser();
     const userId = user?.id;
 
-    // Only fetch the chat's context once it's actually open -- these used to
-    // fire on every page load, for every page, even when the chat was closed.
+    // Fetch the chat's context only once it's open.
     const contextEnabled = isOpen && !!userId;
 
     const { data: savingsData } = useQuery({

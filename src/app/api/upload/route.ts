@@ -39,9 +39,7 @@ export async function POST(request: Request) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
 
-        // Keep only the basename and strip anything that isn't a safe filename
-        // character, so a crafted name (e.g. containing "../") can't escape
-        // the uploads directory.
+        // Basename and safe characters only, so a name like "../x" can't leave uploads/.
         const safeName = path
             .basename(file.name)
             .replace(/[^A-Za-z0-9._-]/g, "_");
@@ -55,7 +53,7 @@ export async function POST(request: Request) {
 
         const filepath = path.join(uploadDir, filename);
 
-        // Belt-and-braces: confirm the resolved path is still inside uploadDir.
+        // Belt and braces: the resolved path must stay inside uploadDir.
         if (path.dirname(filepath) !== uploadDir) {
             return NextResponse.json(
                 { error: "Invalid file name." },

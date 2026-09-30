@@ -10,9 +10,7 @@ export async function GET() {
       return unauthorizedResponse();
     }
 
-    // One round trip instead of three: each SUM runs as its own scalar
-    // subquery against the same row set Postgres would otherwise scan three
-    // separate times.
+    // One round trip instead of three.
     const query = `
       SELECT
         COALESCE((SELECT SUM(amount) FROM incomes WHERE userid = $1), 0) AS total_income,

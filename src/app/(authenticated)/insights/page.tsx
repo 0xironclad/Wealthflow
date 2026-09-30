@@ -131,8 +131,7 @@ export default function InsightsPage() {
         queryKey: ['savings', user?.id],
         queryFn: () => getSavings(user?.id ?? ''),
         enabled: !!user?.id && !isLoadingUser,
-        // Match the staleTime other 'savings' observers use (savings-accounts,
-        // useSavings) so this doesn't trigger its own refetch on mount.
+        // Same staleTime as the other 'savings' observers, so mounting doesn't refetch.
         staleTime: 1000 * 60 * 60,
         refetchOnWindowFocus: false,
         select: (data) => data.map((saving: {

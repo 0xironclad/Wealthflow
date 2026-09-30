@@ -61,8 +61,6 @@ export default function AuthenticatedLayout({
 }: {
     children: React.ReactNode;
 }) {
-    // UserProvider is already mounted once in the root layout (src/app/layout.tsx),
-    // which passes it the server-resolved user; no need for a second one here.
     return (
         <AuthenticatedLayoutContent>
             {children}

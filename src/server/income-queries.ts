@@ -1,7 +1,4 @@
-// Read-only income helpers, fetched from the client so the browser can run
-// them in parallel with the other dashboard requests. Server actions (see
-// src/server/income.ts) are invoked one at a time by Next.js, which was
-// serializing these reads on every page load.
+// Reads go through GET routes so they run in parallel; Next.js runs server actions one at a time.
 
 export const getIncomesById = async () => {
   try {

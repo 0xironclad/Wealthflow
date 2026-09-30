@@ -12,8 +12,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode; initialUser: User | null }> = ({ children, initialUser }) => {
-    // The root layout already resolved this server-side with getUser(), so
-    // there's no client round trip (and no loading state) to start with.
+    // Resolved on the server by the root layout, so there's nothing to load.
     const [user, setUser] = useState<User | null>(initialUser);
     const [isLoading] = useState(false);
 

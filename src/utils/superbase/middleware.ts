@@ -3,17 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_USER_ID_HEADER } from "@/lib/auth/session-header";
 
 export async function updateSession(request: NextRequest) {
-    // Strip any client-supplied copy of the trusted header first, for every
-    // matched request (including when there's no signed-in user below), so
-    // it can never be spoofed. The matcher in middleware.ts covers every
-    // page and API route, so this always runs before getSessionUserId()'s
-    // header fallback would otherwise need to hit Supabase Auth itself.
+    // Strip any client-supplied copy first, on every request, so the header can't be spoofed.
     const requestHeaders = new Headers(request.headers);
     requestHeaders.delete(SESSION_USER_ID_HEADER);
 
-    // Cookies Supabase wants refreshed; applied to the final response below
-    // so we only ever build one NextResponse (with the final request
-    // headers already in place) instead of racing two reconstructions.
+    // Refreshed cookies, applied to the single response built below.
     const cookiesToApply: Array<{
         name: string;
         value: string;
@@ -60,8 +54,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (user) {
-        // Already verified above; forward it so handlers/actions can skip
-        // their own getUser() call (see src/lib/auth/session.ts).
+        // Verified above; lets handlers skip their own getUser() call.
         requestHeaders.set(SESSION_USER_ID_HEADER, user.id);
     }
 

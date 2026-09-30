@@ -3,15 +3,9 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/superbase/server";
 import { SESSION_USER_ID_HEADER } from "@/lib/auth/session-header";
 
-// Returns the signed-in user's id, or null.
-// Never trust a userId supplied by the client (query string / body) instead of this.
-//
-// Middleware (src/utils/superbase/middleware.ts) already verifies the
-// session with supabase.auth.getUser() on every matched request (its
-// matcher covers all pages and API routes) and forwards the verified id via
-// a header it always sets itself, stripping any incoming copy first. Read
-// that header instead of calling getUser() again here, and only fall back
-// to it for a request middleware didn't run for.
+// The signed-in user's id, or null. Never use a client-supplied userId instead.
+// Middleware verifies the session and forwards the id in a header it always strips first;
+// fall back to getUser() when middleware didn't run.
 export async function getSessionUserId(): Promise<string | null> {
     const headerList = await headers();
     const headerUserId = headerList.get(SESSION_USER_ID_HEADER);
