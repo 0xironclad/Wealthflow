@@ -11,10 +11,18 @@ export async function GET() {
             return unauthorizedResponse();
         }
 
-        const {rows: savings} = await pool.query('SELECT * FROM savings WHERE userid = $1', [userId]);
-        const { rows: expenses } = await pool.query('SELECT * FROM expenses WHERE userid = $1', [userId]);
-        const { rows: budgets } = await pool.query('SELECT * FROM budgets WHERE user_id = $1', [userId]);
-        const { rows: income } = await pool.query('SELECT * FROM incomes WHERE userid = $1', [userId]);
+        // Four independent reads: run them together instead of one after the other.
+        const [
+            { rows: savings },
+            { rows: expenses },
+            { rows: budgets },
+            { rows: income },
+        ] = await Promise.all([
+            pool.query('SELECT * FROM savings WHERE userid = $1', [userId]),
+            pool.query('SELECT * FROM expenses WHERE userid = $1', [userId]),
+            pool.query('SELECT * FROM budgets WHERE user_id = $1', [userId]),
+            pool.query('SELECT * FROM incomes WHERE userid = $1', [userId]),
+        ]);
         const prompt = generateFinancialOverviewPrompt({
             savings,
             expenses,
