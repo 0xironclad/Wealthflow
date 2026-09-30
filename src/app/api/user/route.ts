@@ -9,7 +9,8 @@ export async function GET() {
   }
 
   try {
-    const query = "SELECT * FROM users WHERE id = $1";
+    const query =
+      "SELECT id, email, name, fullname, avatar_url, is_email_verified, last_login, created_at, updated_at FROM users WHERE id = $1";
     const result = await pool.query(query, [userId]);
 
     if (result.rows.length === 0) {
