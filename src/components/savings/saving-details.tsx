@@ -97,10 +97,12 @@ export function SavingDetails({
       );
 
       if (newStatus !== currentSaving.status) {
-        fetch(`/api/savings/${currentSaving.id}`, {
+        // There is no /api/savings/[id] route; PATCH /api/savings already
+        // takes the id in the body and is session-scoped.
+        fetch(`/api/savings`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
+          body: JSON.stringify({ id: currentSaving.id, status: newStatus }),
         });
       }
     }
