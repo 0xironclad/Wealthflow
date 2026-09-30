@@ -4,7 +4,7 @@ import { getCurrentMonthIncomeTotal, getMonthlyIncomeTotal } from '@/server/inco
 export function useCurrentMonthIncome(userId: string) {
     return useQuery({
         queryKey: ['monthly-income', userId, 'current'],
-        queryFn: () => getCurrentMonthIncomeTotal(userId),
+        queryFn: () => getCurrentMonthIncomeTotal(),
         enabled: !!userId,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false,
@@ -14,7 +14,7 @@ export function useCurrentMonthIncome(userId: string) {
 export function useMonthlyIncome(userId: string, year?: number, month?: number) {
     return useQuery({
         queryKey: ['monthly-income', userId, year, month],
-        queryFn: () => getMonthlyIncomeTotal(userId, year, month),
+        queryFn: () => getMonthlyIncomeTotal(year, month),
         enabled: !!userId,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchOnWindowFocus: false,

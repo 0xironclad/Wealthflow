@@ -156,7 +156,7 @@ export function IncomeManagement({ incomes, userId }: IncomeManagementProps) {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: (incomeId: string) => deleteIncome(incomeId, userId),
+    mutationFn: (incomeId: string) => deleteIncome(incomeId),
     onSuccess: () => {
       invalidateQueries();
       toast({ title: "Income deleted", description: "The income entry has been removed." });
@@ -231,12 +231,12 @@ export function IncomeManagement({ incomes, userId }: IncomeManagementProps) {
   };
 
   const handleAddIncome = (data: z.infer<typeof formSchema>) => {
-    createMutation.mutate({ userId, ...data });
+    createMutation.mutate(data);
   };
 
   const handleUpdateIncome = (data: z.infer<typeof formSchema>) => {
     if (selectedIncome) {
-      updateMutation.mutate({ id: selectedIncome.id, userId, ...data });
+      updateMutation.mutate({ id: selectedIncome.id, ...data });
     }
   };
 

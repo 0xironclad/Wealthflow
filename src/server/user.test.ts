@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getUserData, updateUserProfile } from "./user";
 import pool from "@/database/db";
+import { getSessionUserId } from "@/lib/auth/session";
 
 vi.mock("@/database/db", () => ({
   default: {
@@ -8,15 +9,23 @@ vi.mock("@/database/db", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/session", () => ({
+  getSessionUserId: vi.fn(),
+}));
+
 const mockPool = pool as unknown as { query: ReturnType<typeof vi.fn> };
+const mockGetSessionUserId = getSessionUserId as unknown as ReturnType<typeof vi.fn>;
 
 describe("getUserData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should throw error when userId is not provided", async () => {
-    await expect(getUserData("")).rejects.toThrow("User ID is required");
+  it("should throw Unauthorized when there is no signed-in user", async () => {
+    mockGetSessionUserId.mockResolvedValueOnce(null);
+
+    await expect(getUserData()).rejects.toThrow("Unauthorized");
+    expect(mockPool.query).not.toHaveBeenCalled();
   });
 
   it("should return user data when found", async () => {
@@ -26,31 +35,35 @@ describe("getUserData", () => {
       fullname: "Test User",
     };
 
+    mockGetSessionUserId.mockResolvedValueOnce("123");
     mockPool.query.mockResolvedValueOnce({
       rows: [mockUser],
     });
 
-    const result = await getUserData("123");
+    const result = await getUserData();
     expect(result).toEqual(mockUser);
     expect(mockPool.query).toHaveBeenCalledWith(
-      "SELECT * FROM users WHERE id = $1",
+      expect.not.stringContaining("SELECT *"),
       ["123"]
     );
+    expect(mockPool.query.mock.calls[0][0]).not.toMatch(/password/i);
   });
 
   it("should throw error when user not found", async () => {
+    mockGetSessionUserId.mockResolvedValueOnce("123");
     mockPool.query.mockResolvedValueOnce({
       rows: [],
     });
 
-    await expect(getUserData("123")).rejects.toThrow("User not found");
+    await expect(getUserData()).rejects.toThrow("User not found");
   });
 
   it("should handle database errors", async () => {
+    mockGetSessionUserId.mockResolvedValueOnce("123");
     const dbError = new Error("Database connection failed");
     mockPool.query.mockRejectedValueOnce(dbError);
 
-    await expect(getUserData("123")).rejects.toThrow(
+    await expect(getUserData()).rejects.toThrow(
       "Database connection failed"
     );
   });
@@ -61,6 +74,18 @@ describe("updateUserProfile", () => {
     vi.clearAllMocks();
   });
 
+  it("should throw Unauthorized when there is no signed-in user", async () => {
+    mockGetSessionUserId.mockResolvedValueOnce(null);
+
+    await expect(
+      updateUserProfile({
+        fullname: "Test",
+        avatarUrl: "https://example.com/avatar.jpg",
+      })
+    ).rejects.toThrow("Unauthorized");
+    expect(mockPool.query).not.toHaveBeenCalled();
+  });
+
   it("should update user profile successfully", async () => {
     const mockUpdatedUser = {
       id: "123",
@@ -69,11 +94,12 @@ describe("updateUserProfile", () => {
       avatar_url: "https://example.com/avatar.jpg",
     };
 
+    mockGetSessionUserId.mockResolvedValueOnce("123");
     mockPool.query.mockResolvedValueOnce({
       rows: [mockUpdatedUser],
     });
 
-    const result = await updateUserProfile("123", {
+    const result = await updateUserProfile({
       fullname: "Updated Name",
       avatarUrl: "https://example.com/avatar.jpg",
     });
@@ -83,14 +109,16 @@ describe("updateUserProfile", () => {
       expect.stringContaining("UPDATE users"),
       ["Updated Name", "https://example.com/avatar.jpg", "123"]
     );
+    expect(mockPool.query.mock.calls[0][0]).not.toMatch(/\bpassword\b/i);
   });
 
   it("should handle database errors", async () => {
+    mockGetSessionUserId.mockResolvedValueOnce("123");
     const dbError = new Error("Update failed");
     mockPool.query.mockRejectedValueOnce(dbError);
 
     await expect(
-      updateUserProfile("123", {
+      updateUserProfile({
         fullname: "Test",
         avatarUrl: "https://example.com/avatar.jpg",
       })

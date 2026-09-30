@@ -1,11 +1,17 @@
 "use server";
 
 import pool from "@/database/db";
+import { getSessionUserId } from "@/lib/auth/session";
 
-export const getMonthlyCashFlow = async (
-    userId: string
-): Promise<{ name: string; income: number; expense: number }[]> => {
+export const getMonthlyCashFlow = async (): Promise<
+    { name: string; income: number; expense: number }[]
+> => {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return [];
+        }
+
         const query = `
       WITH months AS (
         SELECT generate_series(
@@ -40,10 +46,15 @@ export const getMonthlyCashFlow = async (
     }
 };
 
-export const getSpendingByCategory = async (
-    userId: string
-): Promise<{ name: string; value: number; fill: string }[]> => {
+export const getSpendingByCategory = async (): Promise<
+    { name: string; value: number; fill: string }[]
+> => {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return [];
+        }
+
         const query = `
       SELECT
         category,
@@ -80,8 +91,13 @@ export const getSpendingByCategory = async (
     }
 };
 
-export const getFinancialHealth = async (userId: string) => {
+export const getFinancialHealth = async () => {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return { score: 0, savingsRate: 0, runwayMonths: 0, grade: "N/A" };
+        }
+
         const savingsQuery = `
             WITH monthly_stats AS (
                 SELECT
@@ -169,10 +185,15 @@ interface CategoryTrendData {
     [category: string]: number | string;
 }
 
-export const getCategoryTrends = async (
-    userId: string
-): Promise<{ data: CategoryTrendData[]; categories: string[] }> => {
+export const getCategoryTrends = async (): Promise<
+    { data: CategoryTrendData[]; categories: string[] }
+> => {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return { data: [], categories: [] };
+        }
+
         const topCategoriesQuery = `
             SELECT category
             FROM expenses

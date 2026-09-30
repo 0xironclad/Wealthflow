@@ -192,7 +192,7 @@ export default function InsightsPage() {
 
     const { data: financialHealth } = useQuery<{ score: number; savingsRate: number; runwayMonths: number; grade: string }>({
         queryKey: ['financialHealth', user?.id],
-        queryFn: () => user ? getFinancialHealth(user.id) : Promise.resolve({ score: 0, savingsRate: 0, runwayMonths: 0, grade: 'N/A' }),
+        queryFn: () => user ? getFinancialHealth() : Promise.resolve({ score: 0, savingsRate: 0, runwayMonths: 0, grade: 'N/A' }),
         enabled: !!user,
     });
 

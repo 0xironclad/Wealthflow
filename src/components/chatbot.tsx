@@ -61,31 +61,31 @@ function FloatingChatbot() {
 
     const { data: userProfileData } = useQuery({
         queryKey: ['userProfile', userId],
-        queryFn: () => userId ? getUserData(userId) : Promise.resolve(null),
+        queryFn: () => userId ? getUserData() : Promise.resolve(null),
         enabled: !!userId
     });
 
     const { data: financialHealthData } = useQuery({
         queryKey: ['financialHealth', userId],
-        queryFn: () => userId ? getFinancialHealth(userId) : Promise.resolve(null),
+        queryFn: () => userId ? getFinancialHealth() : Promise.resolve(null),
         enabled: !!userId
     });
 
     const { data: monthlyCashFlowData } = useQuery({
         queryKey: ['monthlyCashFlow', userId],
-        queryFn: () => userId ? getMonthlyCashFlow(userId) : Promise.resolve([]),
+        queryFn: () => userId ? getMonthlyCashFlow() : Promise.resolve([]),
         enabled: !!userId
     });
 
     const { data: spendingByCategoryData } = useQuery({
         queryKey: ['spendingByCategory', userId],
-        queryFn: () => userId ? getSpendingByCategory(userId) : Promise.resolve([]),
+        queryFn: () => userId ? getSpendingByCategory() : Promise.resolve([]),
         enabled: !!userId
     });
 
     const { data: categoryTrendsData } = useQuery({
         queryKey: ['categoryTrends', userId],
-        queryFn: () => userId ? getCategoryTrends(userId) : Promise.resolve({ data: [], categories: [] }),
+        queryFn: () => userId ? getCategoryTrends() : Promise.resolve({ data: [], categories: [] }),
         enabled: !!userId
     });
 

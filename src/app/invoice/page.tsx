@@ -27,7 +27,7 @@ function InvoicePage() {
         refetchOnWindowFocus: false,
         queryFn: async () => {
             if (!user) return Promise.resolve([]);
-            return getIncomesById(user.id);
+            return getIncomesById();
         },
         enabled: !!user,
         staleTime: 1000 * 60 * 60,
@@ -71,7 +71,7 @@ function InvoicePage() {
     // Income
     const { data: totalIncome } = useQuery({
         queryKey: ['totalBalance', user?.id],
-        queryFn: () => getTotalIncome(user?.id as string),
+        queryFn: () => getTotalIncome(),
         refetchOnWindowFocus: false,
         enabled: !!user?.id,
         select: (response) => {

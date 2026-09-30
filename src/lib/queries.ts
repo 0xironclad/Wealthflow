@@ -37,7 +37,7 @@ export const useExpenses = (userId: string) => {
 export const useIncomes = (userId: string) => {
     return useQuery({
         queryKey: ["incomes", userId],
-        queryFn: () => getIncomesById(userId),
+        queryFn: () => getIncomesById(),
         enabled: !!userId,
         select: (data) =>
             data.map(

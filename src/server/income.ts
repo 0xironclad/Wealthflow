@@ -1,10 +1,12 @@
 "use server";
 
 import pool from "@/database/db";
+import { getSessionUserId } from "@/lib/auth/session";
 
-export const getIncomesById = async (userId: string) => {
+export const getIncomesById = async () => {
+  const userId = await getSessionUserId();
   if (!userId) {
-    console.error("[getIncomesById] Invalid userId provided");
+    console.error("[getIncomesById] No signed-in user");
     return [];
   }
 
@@ -19,7 +21,6 @@ export const getIncomesById = async (userId: string) => {
 };
 
 export async function createIncome(data: {
-  userId: string;
   name: string;
   amount: number;
   date: Date;
@@ -28,6 +29,11 @@ export async function createIncome(data: {
   isRecurring: boolean;
   recurringFrequency?: string;
 }) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
   try {
     const query = `
       INSERT INTO incomes (
@@ -36,7 +42,7 @@ export async function createIncome(data: {
       RETURNING *
     `;
     const values = [
-      data.userId,
+      userId,
       data.name,
       data.amount,
       data.date,
@@ -54,10 +60,11 @@ export async function createIncome(data: {
   }
 }
 
-export const getTotalIncome = async (userId: string) => {
+export const getTotalIncome = async () => {
   try {
+    const userId = await getSessionUserId();
     if (!userId) {
-      throw new Error("User ID is required");
+      throw new Error("Unauthorized");
     }
 
     // Total balance = incomes - expenses + withdrawals
@@ -86,13 +93,13 @@ export const getTotalIncome = async (userId: string) => {
 };
 
 export const getMonthlyIncomeTotal = async (
-  userId: string,
   year?: number,
   month?: number
 ) => {
   try {
+    const userId = await getSessionUserId();
     if (!userId) {
-      throw new Error("User ID is required");
+      throw new Error("Unauthorized");
     }
 
     // If no year/month provided, use current month
@@ -109,7 +116,7 @@ export const getMonthlyIncomeTotal = async (
       .split("T")[0];
 
     const query = `
-            SELECT 
+            SELECT
                 COALESCE(SUM(amount), 0) as total_income,
                 COUNT(*) as income_count,
                 COALESCE(AVG(amount), 0) as average_income
@@ -137,14 +144,19 @@ export const getMonthlyIncomeTotal = async (
   }
 };
 
-export const getCurrentMonthIncomeTotal = async (userId: string) => {
-  return getMonthlyIncomeTotal(userId);
+export const getCurrentMonthIncomeTotal = async () => {
+  return getMonthlyIncomeTotal();
 };
 
-export async function deleteIncome(incomeId: string, userId: string) {
+export async function deleteIncome(incomeId: string) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
   try {
-    if (!incomeId || !userId) {
-      throw new Error("Income ID and User ID are required");
+    if (!incomeId) {
+      throw new Error("Income ID is required");
     }
 
     const query = `DELETE FROM incomes WHERE id = $1 AND userid = $2 RETURNING *`;
@@ -163,7 +175,6 @@ export async function deleteIncome(incomeId: string, userId: string) {
 
 export async function updateIncome(data: {
   id: string;
-  userId: string;
   name: string;
   amount: number;
   date: Date;
@@ -172,9 +183,14 @@ export async function updateIncome(data: {
   isRecurring: boolean;
   recurringFrequency?: string;
 }) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
   try {
-    if (!data.id || !data.userId) {
-      throw new Error("Income ID and User ID are required");
+    if (!data.id) {
+      throw new Error("Income ID is required");
     }
 
     const query = `
@@ -198,7 +214,7 @@ export async function updateIncome(data: {
       data.isRecurring,
       data.recurringFrequency || null,
       data.id,
-      data.userId,
+      userId,
     ];
 
     const result = await pool.query(query, values);

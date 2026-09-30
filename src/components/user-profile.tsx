@@ -126,7 +126,7 @@ export function UserProfile({ open, onOpenChange }: UserProfileProps) {
 
         setIsSaving(true)
         try {
-            await updateUserProfile(user.id, {
+            await updateUserProfile({
                 fullname: values.fullname,
                 avatarUrl: values.avatarUrl || "",
             })

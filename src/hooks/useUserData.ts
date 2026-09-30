@@ -7,7 +7,7 @@ export function useUserData() {
 
   return useQuery({
     queryKey: ['userData', user?.id],
-    queryFn: () => getUserData(user?.id as string),
+    queryFn: () => getUserData(),
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 10, 
     gcTime: 1000 * 60 * 30, 

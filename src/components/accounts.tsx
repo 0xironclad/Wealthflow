@@ -66,7 +66,7 @@ export default function AccountsCard() {
 
   const { data: incomeData, error } = useQuery({
     queryKey: ['incomes', user?.id],
-    queryFn: () => getIncomesById(user?.id ?? ''),
+    queryFn: () => getIncomesById(),
     enabled: !!user?.id,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 60,
@@ -123,7 +123,7 @@ export default function AccountsCard() {
 
   const { data: totalBalance, isLoading: totalIncomeLoading } = useQuery({
     queryKey: ['totalBalance', user?.id],
-    queryFn: () => getTotalIncome(user?.id as string),
+    queryFn: () => getTotalIncome(),
     refetchOnWindowFocus: false,
     enabled: !!user?.id,
     select: (response) => {
@@ -159,10 +159,7 @@ export default function AccountsCard() {
   })
 
   const handleAddIncome = async (data: z.infer<typeof formSchema>) => {
-    createIncomeMutation.mutate({
-      userId: user?.id as string,
-      ...data,
-    })
+    createIncomeMutation.mutate(data)
   }
 
   const formatCurrency = (amount: number) => {

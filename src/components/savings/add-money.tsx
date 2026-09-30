@@ -41,7 +41,7 @@ export default function AddMoneyForm({ savingId, onClose }: AddMoneyFormProps) {
   const { data: totalBalance } = useQuery({
     queryKey: ["totalBalance", user?.id],
     enabled: !!user?.id,
-    queryFn: () => getTotalIncome(user?.id ?? ""),
+    queryFn: () => getTotalIncome(),
   });
 
   const updateSavingMutation = useMutation({

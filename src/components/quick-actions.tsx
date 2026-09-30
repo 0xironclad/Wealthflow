@@ -142,7 +142,6 @@ export default function QuickActions() {
 
     const createIncomeMutation = useMutation({
         mutationFn: (newIncome: {
-            userId: string;
             name: string;
             amount: number;
             date: Date;
@@ -237,7 +236,6 @@ export default function QuickActions() {
             formData.source
         ) {
             createIncomeMutation.mutate({
-                userId: user.id,
                 name: formData.name,
                 date: formData.date,
                 amount: formData.amount,

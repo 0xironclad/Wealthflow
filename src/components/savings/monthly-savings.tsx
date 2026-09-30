@@ -35,7 +35,7 @@ export function MonthlySavingsLineChart() {
 
     const { data: incomes } = useQuery({
         queryKey: ['incomes', user?.id],
-        queryFn: () => user ? getIncomesById(user.id) : null,
+        queryFn: () => user ? getIncomesById() : null,
         enabled: !!user
     });
 

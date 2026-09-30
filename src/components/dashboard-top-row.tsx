@@ -190,7 +190,7 @@ const DashboardTopRow: React.FC = () => {
         refetchOnWindowFocus: false,
         queryFn: () => {
             if (!user) return Promise.resolve([]);
-            return getIncomesById(user.id);
+            return getIncomesById();
         },
         enabled: !!user,
         staleTime: 1000 * 60 * 5,
