@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getIncomesById, getTotalIncome } from "@/server/income";
+import { getIncomesById, getTotalIncome } from "@/server/income-queries";
 import { useUser } from '@/context/UserContext';
 import {
   Dialog,

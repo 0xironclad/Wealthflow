@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCurrentMonthIncomeTotal, getMonthlyIncomeTotal } from '@/server/income'
+import { getCurrentMonthIncomeTotal, getMonthlyIncomeTotal } from '@/server/income-queries'
 
 export function useCurrentMonthIncome(userId: string) {
     return useQuery({

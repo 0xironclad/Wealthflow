@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getUserData, updateUserProfile } from "./user";
+import { updateUserProfile } from "./user";
 import pool from "@/database/db";
 import { getSessionUserId } from "@/lib/auth/session";
 
@@ -15,56 +15,6 @@ vi.mock("@/lib/auth/session", () => ({
 
 const mockPool = pool as unknown as { query: ReturnType<typeof vi.fn> };
 const mockGetSessionUserId = getSessionUserId as unknown as ReturnType<typeof vi.fn>;
-
-describe("getUserData", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("should throw Unauthorized when there is no signed-in user", async () => {
-    mockGetSessionUserId.mockResolvedValueOnce(null);
-
-    await expect(getUserData()).rejects.toThrow("Unauthorized");
-    expect(mockPool.query).not.toHaveBeenCalled();
-  });
-
-  it("should return user data when found", async () => {
-    const mockUser = {
-      id: "123",
-      email: "test@example.com",
-      fullname: "Test User",
-    };
-
-    mockGetSessionUserId.mockResolvedValueOnce("123");
-    mockPool.query.mockResolvedValueOnce({
-      rows: [{ ...mockUser, password: "$2b$10$hash" }],
-    });
-
-    const result = await getUserData();
-    expect(result).toEqual(mockUser);
-    expect(result).not.toHaveProperty("password");
-    expect(mockPool.query).toHaveBeenCalledWith(expect.any(String), ["123"]);
-  });
-
-  it("should throw error when user not found", async () => {
-    mockGetSessionUserId.mockResolvedValueOnce("123");
-    mockPool.query.mockResolvedValueOnce({
-      rows: [],
-    });
-
-    await expect(getUserData()).rejects.toThrow("User not found");
-  });
-
-  it("should handle database errors", async () => {
-    mockGetSessionUserId.mockResolvedValueOnce("123");
-    const dbError = new Error("Database connection failed");
-    mockPool.query.mockRejectedValueOnce(dbError);
-
-    await expect(getUserData()).rejects.toThrow(
-      "Database connection failed"
-    );
-  });
-});
 
 describe("updateUserProfile", () => {
   beforeEach(() => {

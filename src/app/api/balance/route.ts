@@ -10,20 +10,19 @@ export async function GET() {
       return unauthorizedResponse();
     }
 
-    const query = `SELECT SUM(amount) AS total_income FROM incomes WHERE userid = $1`;
-    const incomeResult = await pool.query(query, [userId]);
-    const totalIncome = parseFloat(incomeResult.rows[0].total_income || 0);
+    // One round trip instead of three: each SUM runs as its own scalar
+    // subquery against the same row set Postgres would otherwise scan three
+    // separate times.
+    const query = `
+      SELECT
+        COALESCE((SELECT SUM(amount) FROM incomes WHERE userid = $1), 0) AS total_income,
+        COALESCE((SELECT SUM(amount) FROM expenses WHERE userid = $1 AND (type = 'expense' OR type = 'saving')), 0) AS total_expense,
+        COALESCE((SELECT SUM(amount) FROM expenses WHERE userid = $1 AND type = 'withdrawal'), 0) AS total_withdrawal
+    `;
+    const result = await pool.query(query, [userId]);
+    const { total_income, total_expense, total_withdrawal } = result.rows[0];
 
-    const expenseQuery = `SELECT SUM(amount) AS total_expense FROM expenses WHERE userid = $1 and (type = 'expense' OR type = 'saving')`;
-    const expenseResult = await pool.query(expenseQuery, [userId]);
-    const totalExpense = parseFloat(expenseResult.rows[0].total_expense || 0);
-
-    const withdrawalQuery = `SELECT SUM(amount) AS total_withdrawal FROM expenses WHERE userid = $1 and type = 'withdrawal'`;
-    const withdrawalResult = await pool.query(withdrawalQuery, [userId]);
-    const totalWithdrawal = parseFloat(withdrawalResult.rows[0].total_withdrawal || 0);
-
-
-    const totalBalance = Number(totalIncome) - Number(totalExpense) + Number(totalWithdrawal);
+    const totalBalance = Number(total_income) - Number(total_expense) + Number(total_withdrawal);
 
     return NextResponse.json(
       {

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getTotalIncome } from "@/server/income";
+import { getTotalIncome } from "@/server/income-queries";
 import { useUser } from "@/context/UserContext";
 
 interface AddMoneyFormProps {

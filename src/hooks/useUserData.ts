@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getUserData } from '@/server/user'
+import { getUserData } from '@/server/user-queries'
 import { useUser } from '@/context/UserContext'
 
 export function useUserData() {

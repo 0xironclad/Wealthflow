@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getExpensesById } from "@/server/expense";
-import { getIncomesById } from "@/server/income";
+import { getIncomesById } from "@/server/income-queries";
 import { getSavings, getSavingsHistory } from "@/server/saving";
 
 export const useExpenses = (userId: string) => {

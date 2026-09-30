@@ -3,7 +3,7 @@
 import { useUser } from "@/context/UserContext";
 import { IncomeType, InvoiceType } from "@/lib/types";
 import { getExpensesById } from "@/server/expense";
-import { getIncomesById, getTotalIncome } from "@/server/income";
+import { getIncomesById, getTotalIncome } from "@/server/income-queries";
 import { useQuery } from "@tanstack/react-query";
 import logo from "@/assets/icon.png";
 import Image from "next/image";

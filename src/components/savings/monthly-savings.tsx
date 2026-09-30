@@ -3,7 +3,7 @@
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { useQuery } from "@tanstack/react-query"
-import { getIncomesById } from "@/server/income"
+import { getIncomesById } from "@/server/income-queries"
 import { getExpensesById } from "@/server/expense"
 import { useUser } from "@/context/UserContext"
 import { IncomeType } from "@/lib/types"

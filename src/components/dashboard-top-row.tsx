@@ -4,7 +4,7 @@ import {
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TrendingUp, TrendingDown, CreditCard, PiggyBank, DollarSign, Wallet } from "lucide-react"
-import { getIncomesById } from "@/server/income";
+import { getIncomesById } from "@/server/income-queries";
 import { getExpensesById } from "@/server/expense";
 import { useQuery } from "@tanstack/react-query";
 import { InvoiceType, IncomeType, SavingsType } from "@/lib/types";
