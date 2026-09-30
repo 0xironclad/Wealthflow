@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { UserProvider } from "@/context/UserContext";
+import { createClient } from "@/utils/superbase/server";
 import { Analytics } from "@vercel/analytics/next"
 
 
@@ -27,11 +28,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Resolve the user once, server-side, and hand it to UserProvider so the
+  // client doesn't need its own getUser() round trip. Null on /login and
+  // /auth, which is expected there.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <html
       lang="en"
@@ -48,7 +57,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <UserProvider>
+          <UserProvider initialUser={user}>
             <QueryProvider>
               {children}
               <Analytics />

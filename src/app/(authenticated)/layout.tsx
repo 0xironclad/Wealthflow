@@ -7,7 +7,6 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { UserProvider } from "@/context/UserContext";
 import { Header } from "@/components/header";
 import { useUser } from "@/context/UserContext";
 import QuickActions from "@/components/quick-actions";
@@ -62,11 +61,11 @@ export default function AuthenticatedLayout({
 }: {
     children: React.ReactNode;
 }) {
+    // UserProvider is already mounted once in the root layout (src/app/layout.tsx),
+    // which passes it the server-resolved user; no need for a second one here.
     return (
-        <UserProvider>
-            <AuthenticatedLayoutContent>
-                {children}
-            </AuthenticatedLayoutContent>
-        </UserProvider>
+        <AuthenticatedLayoutContent>
+            {children}
+        </AuthenticatedLayoutContent>
     );
 }

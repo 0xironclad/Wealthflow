@@ -11,24 +11,17 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+export const UserProvider: React.FC<{ children: React.ReactNode; initialUser: User | null }> = ({ children, initialUser }) => {
+    // The root layout already resolved this server-side with getUser(), so
+    // there's no client round trip (and no loading state) to start with.
+    const [user, setUser] = useState<User | null>(initialUser);
+    const [isLoading] = useState(false);
 
     useEffect(() => {
         const supabase = createClient();
 
-        const fetchUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            console.log('[UserContext] User fetched:', { userId: user?.id, isLoading: false });
-            setUser(user);
-            setIsLoading(false);
-        };
-
-        fetchUser();
-
+        // Keeps user in sync with client-side sign-in/sign-out.
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log('[UserContext] Auth state changed:', { event, userId: session?.user?.id });
             setUser(session?.user ?? null);
         });
 
