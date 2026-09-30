@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import pool from "@/database/db";
 import { determineStatus } from "@/lib/determine-status";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
 export async function PATCH(request: Request) {
   try {
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return unauthorizedResponse();
+    }
+
     const body = await request.json();
 
     if (!body.id || body.amount === undefined) {
@@ -13,8 +19,8 @@ export async function PATCH(request: Request) {
       }, { status: 400 });
     }
 
-    const getCurrentSaving = "SELECT * FROM savings WHERE id = $1";
-    const currentResult = await pool.query(getCurrentSaving, [body.id]);
+    const getCurrentSaving = "SELECT * FROM savings WHERE id = $1 AND userid = $2";
+    const currentResult = await pool.query(getCurrentSaving, [body.id, userId]);
 
     if (currentResult.rows.length === 0) {
       return NextResponse.json({
@@ -43,17 +49,17 @@ export async function PATCH(request: Request) {
     );
 
     if (newStatus !== currentStatus) {
-      const updateStatusQuery = "UPDATE savings SET status = $1 WHERE id = $2";
-      await pool.query(updateStatusQuery, [newStatus, body.id]);
+      const updateStatusQuery = "UPDATE savings SET status = $1 WHERE id = $2 AND userid = $3";
+      await pool.query(updateStatusQuery, [newStatus, body.id, userId]);
     }
 
-    const query = "UPDATE savings SET amount = $1 WHERE id = $2 RETURNING *";
-    const result = await pool.query(query, [newAmount, body.id]);
+    const query = "UPDATE savings SET amount = $1 WHERE id = $2 AND userid = $3 RETURNING *";
+    const result = await pool.query(query, [newAmount, body.id, userId]);
 
     // Update the expenses table with the new transaction
     const newTransactionQuery = "INSERT INTO expenses (userid, name, date, amount, type, paymentmethod, category) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *";
     await pool.query(newTransactionQuery, [
-      currentResult.rows[0].userid,
+      userId,
       `${currentResult.rows[0].name} - Withdrawal`,
       new Date(),
       withdrawAmount,

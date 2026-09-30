@@ -1,30 +1,18 @@
 import { NextResponse } from "next/server";
 import pool from "@/database/db";
 import { SavingSchema, UpdateSavingSchema } from "@/lib/schemas/saving-schema";
-
-// HELPERS
-const validateId = (id: string | null, name: string) => {
-  if (!id || id.trim() === "") {
-    return {
-      isValid: false,
-      error: {
-        success: false,
-        message: `${name} is required`,
-      },
-    };
-  }
-  return { isValid: true };
-};
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
+import { refreshSavingStatuses } from "@/lib/savings-status";
 
 // Fetch all the savings from the database
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get("userId");
-    const userValidation = validateId(userId, "User ID");
-    if (!userValidation.isValid) {
-      return NextResponse.json(userValidation.error, { status: 400 });
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return unauthorizedResponse();
     }
+
+    await refreshSavingStatuses(pool, userId);
 
     const query = "SELECT * FROM savings WHERE userid = $1";
 
@@ -51,6 +39,11 @@ export async function GET(request: Request) {
 
 // add a new saving to the database
 export async function POST(request: Request) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return unauthorizedResponse();
+  }
+
   const client = await pool.connect();
 
   try {
@@ -86,7 +79,7 @@ export async function POST(request: Request) {
         `;
 
     const savingValues = [
-      body.userId,
+      userId,
       body.name,
       body.amount,
       body.goal,
@@ -146,6 +139,11 @@ export async function POST(request: Request) {
 // update
 export async function PUT(request: Request) {
   try {
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return unauthorizedResponse();
+    }
+
     const body = await request.json();
     const { error } = UpdateSavingSchema.safeParse(body);
     if (error) {
@@ -168,7 +166,7 @@ export async function PUT(request: Request) {
                 description = $5,
                 target_date = $6,
                 updated_at = NOW()
-            WHERE id = $7
+            WHERE id = $7 AND userid = $8
             RETURNING *
         `;
     const result = await pool.query(query, [
@@ -179,7 +177,19 @@ export async function PUT(request: Request) {
       body.description,
       body.targetDate ?? null,
       body.id,
+      userId,
     ]);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Saving not found",
+        },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -201,6 +211,11 @@ export async function PUT(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return unauthorizedResponse();
+    }
+
     const body = await request.json();
     if (!body.id || !body.status) {
       return NextResponse.json(
@@ -231,8 +246,8 @@ export async function PATCH(request: Request) {
         { status: 400 }
       );
     }
-    const checkQuery = "SELECT id FROM savings WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [body.id]);
+    const checkQuery = "SELECT id FROM savings WHERE id = $1 AND userid = $2";
+    const checkResult = await pool.query(checkQuery, [body.id, userId]);
     if (checkResult.rows.length === 0) {
       return NextResponse.json(
         {
@@ -243,8 +258,8 @@ export async function PATCH(request: Request) {
       );
     }
     const query =
-      "UPDATE savings SET status = $1, updatedAt = NOW() WHERE id = $2 RETURNING *";
-    const result = await pool.query(query, [body.status, body.id]);
+      "UPDATE savings SET status = $1, updated_at = NOW() WHERE id = $2 AND userid = $3 RETURNING *";
+    const result = await pool.query(query, [body.status, body.id, userId]);
     return NextResponse.json(
       {
         success: true,
@@ -267,6 +282,11 @@ export async function PATCH(request: Request) {
 // delete a saving and add back its amount to total balance as a withdrawal
 export async function DELETE(request: Request) {
   try {
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return unauthorizedResponse();
+    }
+
     const body = await request.json();
     const id = body?.id;
     if (!id) {
@@ -279,8 +299,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const getQuery = "SELECT * FROM savings WHERE id = $1";
-    const getResult = await pool.query(getQuery, [id]);
+    const getQuery = "SELECT * FROM savings WHERE id = $1 AND userid = $2";
+    const getResult = await pool.query(getQuery, [id, userId]);
     if (getResult.rows.length === 0) {
       return NextResponse.json(
         {
@@ -292,7 +312,6 @@ export async function DELETE(request: Request) {
     }
 
     const saving = getResult.rows[0];
-    const userId = saving.userid;
     const currentAmount = parseFloat(saving.amount || 0);
 
     // if there is remaining amount, record a saving expense and history
@@ -318,8 +337,8 @@ export async function DELETE(request: Request) {
       await pool.query(historyInsert, [id, currentAmount, "withdrawal"]);
     }
 
-    const deleteQuery = "DELETE FROM savings WHERE id = $1";
-    await pool.query(deleteQuery, [id]);
+    const deleteQuery = "DELETE FROM savings WHERE id = $1 AND userid = $2";
+    await pool.query(deleteQuery, [id, userId]);
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
