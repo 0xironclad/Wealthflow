@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
 import fs from "fs";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return unauthorizedResponse();
+        }
+
         const formData = await request.formData();
         const file = formData.get("file") as File;
 

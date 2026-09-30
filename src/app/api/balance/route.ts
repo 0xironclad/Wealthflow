@@ -1,20 +1,15 @@
 import { NextResponse } from "next/server";
 import pool from "@/database/db";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
 // Total balance = incomes - expenses + withdrawals
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get("userId");
+    const userId = await getSessionUserId();
     if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User ID is required",
-        },
-        { status: 400 }
-      );
+      return unauthorizedResponse();
     }
+
     const query = `SELECT SUM(amount) AS total_income FROM incomes WHERE userid = $1`;
     const incomeResult = await pool.query(query, [userId]);
     const totalIncome = parseFloat(incomeResult.rows[0].total_income || 0);

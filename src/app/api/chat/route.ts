@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { ChaBotPrompt } from "@/lib/prompts/financial";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
 if (!process.env.GOOGLE_API_KEY) {
     throw new Error('GOOGLE_API_KEY is not defined')
@@ -9,6 +10,11 @@ if (!process.env.GOOGLE_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 export async function POST(request: Request) {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return unauthorizedResponse();
+        }
+
         const { messages, userData } = await request.json()
         if (!messages || !Array.isArray(messages)) {
             return NextResponse.json({

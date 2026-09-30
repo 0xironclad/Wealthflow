@@ -4,6 +4,7 @@ import {
   ExpenseSchema,
   UpdateExpenseSchema,
 } from "@/lib/schemas/expense-schema";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
 const validateId = (id: string | null, name: string) => {
   if (!id) {
@@ -18,19 +19,11 @@ const validateId = (id: string | null, name: string) => {
   return { isValid: true };
 };
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get("userId");
-
+    const userId = await getSessionUserId();
     if (!userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "User ID is required",
-        },
-        { status: 400 }
-      );
+      return unauthorizedResponse();
     }
 
     const query = "SELECT * FROM expenses WHERE userid = $1";
@@ -58,6 +51,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const userId = await getSessionUserId();
+    if (!userId) {
+      return unauthorizedResponse();
+    }
+
     const body = await request.json();
     const { error } = ExpenseSchema.safeParse(body);
     if (error) {
@@ -80,7 +78,7 @@ export async function POST(request: Request) {
       const expenseQuery =
         "INSERT INTO expenses (userid, name, date, amount, type, paymentmethod, category) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *";
       const expenseResult = await client.query(expenseQuery, [
-        body.userId,
+        userId,
         body.name,
         body.date,
         body.amount,
@@ -104,7 +102,7 @@ export async function POST(request: Request) {
                     LIMIT 1
                 `;
         const budgetResult = await client.query(budgetQuery, [
-          body.userId,
+          userId,
           body.category,
           body.date,
         ]);
@@ -140,7 +138,7 @@ export async function POST(request: Request) {
                         RETURNING *
                     `;
           await client.query(incomeQuery, [
-            body.userId,
+            userId,
             body.name,
             body.date,
             body.amount,
@@ -185,6 +183,11 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return unauthorizedResponse();
+  }
+
   const client = await pool.connect();
   try {
     const body = await request.json();
@@ -202,14 +205,29 @@ export async function PUT(request: Request) {
 
     await client.query("BEGIN");
 
-    // Get the old expense to adjust budgets
-    const oldExpenseQuery = "SELECT * FROM expenses WHERE id = $1";
-    const oldExpenseResult = await client.query(oldExpenseQuery, [body.id]);
+    // Get the old expense to adjust budgets, scoped to the owner
+    const oldExpenseQuery =
+      "SELECT * FROM expenses WHERE id = $1 AND userid = $2";
+    const oldExpenseResult = await client.query(oldExpenseQuery, [
+      body.id,
+      userId,
+    ]);
     const oldExpense = oldExpenseResult.rows[0];
 
-    // Update the expense
+    if (!oldExpense) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Expense not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Update the expense, scoped to the owner
     const query =
-      "UPDATE expenses SET name = $1, date = $2, amount = $3, type = $4, paymentmethod = $5, category = $6 WHERE id = $7 RETURNING *";
+      "UPDATE expenses SET name = $1, date = $2, amount = $3, type = $4, paymentmethod = $5, category = $6 WHERE id = $7 AND userid = $8 RETURNING *";
     const result = await client.query(query, [
       body.name,
       body.date,
@@ -218,10 +236,11 @@ export async function PUT(request: Request) {
       body.paymentMethod,
       body.category,
       body.id,
+      userId,
     ]);
 
     // If old expense was an expense type, subtract from old budget
-    if (oldExpense && oldExpense.type === "expense") {
+    if (oldExpense.type === "expense") {
       const oldBudgetQuery = `
                 SELECT id FROM budgets
                 WHERE user_id = $1
@@ -258,7 +277,7 @@ export async function PUT(request: Request) {
                 LIMIT 1
             `;
       const newBudgetResult = await client.query(newBudgetQuery, [
-        body.userId || oldExpense.userid,
+        userId,
         body.category,
         body.date,
       ]);
@@ -296,19 +315,19 @@ export async function PUT(request: Request) {
 
 // Delete an expense from the database
 export async function DELETE(request: Request) {
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return unauthorizedResponse();
+  }
+
   const client = await pool.connect();
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get("id");
-    const userId = url.searchParams.get("userId");
 
     const expenseValidation = validateId(id, "Expense ID");
     if (!expenseValidation.isValid) {
       return NextResponse.json(expenseValidation.error, { status: 400 });
-    }
-    const userValidation = validateId(userId, "User ID");
-    if (!userValidation.isValid) {
-      return NextResponse.json(userValidation.error, { status: 400 });
     }
 
     await client.query("BEGIN");

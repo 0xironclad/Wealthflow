@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import pool from "@/database/db";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
-
+export async function GET() {
+  const userId = await getSessionUserId();
   if (!userId) {
-    return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+    return unauthorizedResponse();
   }
 
   try {
@@ -23,5 +22,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-
 

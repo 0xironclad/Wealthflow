@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
 import pool from "@/database/db";
 import { BudgetSchema, UpdateBudgetSchema } from "@/lib/schemas/budget-schema";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
 // get budgets
 export async function GET(request: Request) {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return unauthorizedResponse();
+        }
+
         const url = new URL(request.url)
-        const userId = url.searchParams.get('userId')
         const getTotal = url.searchParams.get('total') === 'true'
         const fromDate = url.searchParams.get('from')
         const toDate = url.searchParams.get('to')
-
-        if (!userId) {
-            return NextResponse.json({
-                success: false,
-                message: "User ID is required"
-            }, { status: 400 })
-        }
 
         if (getTotal) {
             // Handle total budget calculation
@@ -123,6 +121,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return unauthorizedResponse();
+        }
+
         const body = await request.json()
         const { error } = BudgetSchema.safeParse(body)
         if (error) {
@@ -134,7 +137,7 @@ export async function POST(request: Request) {
         }
         const query = 'INSERT INTO budgets (user_id, name, description, period_type, start_date, end_date, category, planned_amount, spent_amount, is_rollover) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *'
         const result = await pool.query(query, [
-            body.userId,
+            userId,
             body.name,
             body.description,
             body.periodType,
@@ -162,9 +165,12 @@ export async function POST(request: Request) {
 }
 export async function PUT(request: Request) {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return unauthorizedResponse();
+        }
+
         const body = await request.json()
-        const url = new URL(request.url)
-        const userId = url.searchParams.get('userId')
         const { error } = UpdateBudgetSchema.safeParse(body)
         if (error) {
             return NextResponse.json({
@@ -175,6 +181,12 @@ export async function PUT(request: Request) {
         }
         const query = 'UPDATE budgets SET name = $1, description = $2, period_type = $3, start_date = $4, end_date = $5, category = $6, planned_amount = $7, spent_amount = $8, is_rollover = $9 WHERE id = $10 AND user_id = $11 RETURNING *'
         const result = await pool.query(query, [body.name, body.description, body.periodType, body.startDate, body.endDate, body.category, body.plannedAmount, body.spentAmount, body.rollover, body.id, userId])
+        if (result.rows.length === 0) {
+            return NextResponse.json({
+                success: false,
+                message: "Budget not found"
+            }, { status: 404 })
+        }
         return NextResponse.json({
             success: true,
             data: result.rows[0]
@@ -192,11 +204,21 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
+        const userId = await getSessionUserId();
+        if (!userId) {
+            return unauthorizedResponse();
+        }
+
         const url = new URL(request.url)
         const id = url.searchParams.get('id')
-        const userId = url.searchParams.get('userId')
         const query = "delete from budgets where id = $1 and user_id = $2 returning *"
         const result = await pool.query(query, [id, userId])
+        if (result.rows.length === 0) {
+            return NextResponse.json({
+                success: false,
+                message: "Budget not found"
+            }, { status: 404 })
+        }
         return NextResponse.json({
             success: true,
             data: result.rows[0]

@@ -2,16 +2,13 @@ import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 import pool from "@/database/db";
 import { generateFinancialOverviewPrompt } from "@/lib/prompts/financial";
+import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
-        const { searchParams } = new URL(request.url);
-        const userId = searchParams.get('userId');
+        const userId = await getSessionUserId();
         if (!userId) {
-            return NextResponse.json({
-                success: false,
-                message: "User ID is required"
-            }, { status: 400 })
+            return unauthorizedResponse();
         }
 
         const {rows: savings} = await pool.query('SELECT * FROM savings WHERE userid = $1', [userId]);
