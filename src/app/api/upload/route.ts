@@ -4,6 +4,8 @@ import { writeFile, mkdir } from "fs/promises";
 import fs from "fs";
 import { getSessionUserId, unauthorizedResponse } from "@/lib/auth/session";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
 export async function POST(request: Request) {
     try {
         const userId = await getSessionUserId();
@@ -21,8 +23,29 @@ export async function POST(request: Request) {
             );
         }
 
+        if (!file.type.startsWith("image/")) {
+            return NextResponse.json(
+                { error: "Only image uploads are allowed." },
+                { status: 415 }
+            );
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json(
+                { error: "File is too large. Maximum size is 5MB." },
+                { status: 413 }
+            );
+        }
+
         const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = Date.now() + "_" + file.name.replaceAll(" ", "_");
+
+        // Keep only the basename and strip anything that isn't a safe filename
+        // character, so a crafted name (e.g. containing "../") can't escape
+        // the uploads directory.
+        const safeName = path
+            .basename(file.name)
+            .replace(/[^A-Za-z0-9._-]/g, "_");
+        const filename = `${Date.now()}_${safeName}`;
 
         // Ensure uploads directory exists
         const uploadDir = path.join(process.cwd(), "public/uploads");
@@ -31,6 +54,14 @@ export async function POST(request: Request) {
         }
 
         const filepath = path.join(uploadDir, filename);
+
+        // Belt-and-braces: confirm the resolved path is still inside uploadDir.
+        if (path.dirname(filepath) !== uploadDir) {
+            return NextResponse.json(
+                { error: "Invalid file name." },
+                { status: 400 }
+            );
+        }
 
         await writeFile(filepath, buffer);
 
