@@ -1,9 +1,7 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/utils/superbase/middleware'
-import { savingsStatusChecker } from '@/middleware/savings-status-checker'
 
 export async function middleware(request: NextRequest) {
-  await savingsStatusChecker(request)
   return await updateSession(request)
 }
 

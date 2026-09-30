@@ -64,5 +64,41 @@ describe('determineStatus', () => {
     // Should not crash and return a valid status
     expect(['active', 'atRisk', 'completed']).toContain(result)
   })
+
+  it('should return "active" when there is no target date and the goal is not yet met', () => {
+    vi.setSystemTime(baseDate)
+    const result = determineStatus(500, 1000, null, baseDate.toISOString())
+    expect(result).toBe<SavingStatus>('active')
+  })
+
+  it('should return "active" when target date is undefined and the goal is not yet met', () => {
+    vi.setSystemTime(baseDate)
+    const result = determineStatus(500, 1000, undefined, baseDate.toISOString())
+    expect(result).toBe<SavingStatus>('active')
+  })
+
+  it('should return "completed" with no target date when amount >= goal', () => {
+    vi.setSystemTime(baseDate)
+    const result = determineStatus(1000, 1000, null, baseDate.toISOString())
+    expect(result).toBe<SavingStatus>('completed')
+  })
+
+  it('should accept numeric strings for amount and goal', () => {
+    vi.setSystemTime(baseDate)
+    const result = determineStatus('1000', '1000', futureDate.toISOString(), baseDate.toISOString())
+    expect(result).toBe<SavingStatus>('completed')
+  })
+
+  it('should return "active" when there is no goal set, regardless of target date', () => {
+    vi.setSystemTime(baseDate)
+    const result = determineStatus(500, null, futureDate.toISOString(), baseDate.toISOString())
+    expect(result).toBe<SavingStatus>('active')
+  })
+
+  it('should return "active" when goal is undefined', () => {
+    vi.setSystemTime(baseDate)
+    const result = determineStatus(500, undefined, pastDate.toISOString(), baseDate.toISOString())
+    expect(result).toBe<SavingStatus>('active')
+  })
 })
 
