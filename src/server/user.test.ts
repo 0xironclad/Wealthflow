@@ -37,16 +37,13 @@ describe("getUserData", () => {
 
     mockGetSessionUserId.mockResolvedValueOnce("123");
     mockPool.query.mockResolvedValueOnce({
-      rows: [mockUser],
+      rows: [{ ...mockUser, password: "$2b$10$hash" }],
     });
 
     const result = await getUserData();
     expect(result).toEqual(mockUser);
-    expect(mockPool.query).toHaveBeenCalledWith(
-      expect.not.stringContaining("SELECT *"),
-      ["123"]
-    );
-    expect(mockPool.query.mock.calls[0][0]).not.toMatch(/password/i);
+    expect(result).not.toHaveProperty("password");
+    expect(mockPool.query).toHaveBeenCalledWith(expect.any(String), ["123"]);
   });
 
   it("should throw error when user not found", async () => {
@@ -96,7 +93,7 @@ describe("updateUserProfile", () => {
 
     mockGetSessionUserId.mockResolvedValueOnce("123");
     mockPool.query.mockResolvedValueOnce({
-      rows: [mockUpdatedUser],
+      rows: [{ ...mockUpdatedUser, password: "$2b$10$hash" }],
     });
 
     const result = await updateUserProfile({
@@ -105,11 +102,11 @@ describe("updateUserProfile", () => {
     });
 
     expect(result).toEqual(mockUpdatedUser);
+    expect(result).not.toHaveProperty("password");
     expect(mockPool.query).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE users"),
       ["Updated Name", "https://example.com/avatar.jpg", "123"]
     );
-    expect(mockPool.query.mock.calls[0][0]).not.toMatch(/\bpassword\b/i);
   });
 
   it("should handle database errors", async () => {

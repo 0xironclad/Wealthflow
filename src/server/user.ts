@@ -1,6 +1,7 @@
 "use server";
 
 import pool from "@/database/db";
+import { withoutPassword } from "@/lib/auth/public-user";
 import { getSessionUserId } from "@/lib/auth/session";
 
 
@@ -12,15 +13,14 @@ export async function getUserData() {
             throw new Error("Unauthorized");
         }
 
-        const query =
-            "SELECT id, email, name, fullname, avatar_url, is_email_verified, last_login, created_at, updated_at FROM users WHERE id = $1";
+        const query = "SELECT * FROM users WHERE id = $1";
         const result = await pool.query(query, [userId]);
 
         if (result.rows.length === 0) {
             throw new Error("User not found");
         }
 
-        return result.rows[0];
+        return withoutPassword(result.rows[0]);
     } catch (error) {
         console.error("Error fetching user data:", error);
         throw error;
@@ -45,7 +45,7 @@ export async function updateUserProfile(
           avatar_url = $2,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = $3
-      RETURNING id, email, name, fullname, avatar_url, is_email_verified, last_login, created_at, updated_at
+      RETURNING *
     `;
         const result = await pool.query(query, [
             data.fullname,
@@ -53,7 +53,7 @@ export async function updateUserProfile(
             userId,
         ]);
 
-        return result.rows[0];
+        return withoutPassword(result.rows[0]);
     } catch (error) {
         console.error("Error updating user:", error);
         throw error;
